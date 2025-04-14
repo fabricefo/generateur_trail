@@ -110,10 +110,16 @@ def calcul_etapes(points, distance_etape_km):
 
 # === PLAN D’ENTRAÎNEMENT ===
 
-def generer_plan(nb_semaines, seances_semaine, objectif, date_course):
+def generer_plan(nb_semaines, seances_semaine, objectif, date_course, distance_totale, denivele_positif):
     base_date = datetime.strptime(date_course, "%Y-%m-%d") - timedelta(weeks=nb_semaines)
     jours_semaine = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
     plan = []
+
+    # Ajuster les sorties longues en fonction de la distance totale et du dénivelé
+    sortie_longue_base = 90  # Durée de base en minutes
+    ajout_duree = int(distance_totale / 10)  # Ajouter 10 min par tranche de 10 km
+    ajout_difficulte = int(denivele_positif / 500)  # Ajouter 5 min par 500 m de D+
+    sortie_longue_duree = sortie_longue_base + ajout_duree + ajout_difficulte
 
     for semaine in range(nb_semaines):
         phase = (
@@ -138,10 +144,11 @@ def generer_plan(nb_semaines, seances_semaine, objectif, date_course):
             jour = jours_semaine[j % 7]
             type_seance = types_seances[jours_utilisés % len(types_seances)]
 
+            # Ajuster le contenu des séances
             contenu = {
                 "Footing": "45-60 min allure facile",
                 "PPG / Renfo": "30-40 min gainage + renfo",
-                "Sortie Longue": f"{90 + semaine * 5} min trail vallonné",
+                "Sortie Longue": f"{sortie_longue_duree + semaine * 5} min trail vallonné",
                 "Vélo": "1h tranquille ou 45 min home-trainer",
                 "Seuil": "2x10 à 3x10 min allure tempo",
                 "VMA": "8x45s vite / 45s récup",
@@ -224,7 +231,7 @@ denivele_negatif = sum(max(0, ele1 - ele2) for (_, _, _, ele1), (_, _, _, ele2) 
 print("=== Tableau des Temps de Passage ===")
 print(df_etapes.to_string(index=False))
 
-plan_df = generer_plan(nb_semaines, seances_par_semaine, objectif, date_course)
+plan_df = generer_plan(nb_semaines, seances_par_semaine, objectif, date_course, distance_totale, denivele_positif)
 resume_df = ajouter_resume_hebdo(plan_df)
 
 with pd.ExcelWriter("planning_course_et_entrainement.xlsx", engine="xlsxwriter") as writer:
