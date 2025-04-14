@@ -21,10 +21,28 @@ def lire_trace_gpx(fichier):
     with open(fichier, 'r') as f:
         gpx = gpxpy.parse(f)
     points = []
+    distance_totale = 0
+    denivele_positif = 0
+    denivele_negatif = 0
+    
     for track in gpx.tracks:
         for segment in track.segments:
-            for p in segment.points:
+            for i, p in enumerate(segment.points):
                 points.append((p.time, p.latitude, p.longitude, p.elevation))
+                if i > 0:
+                    # Calcul de la distance et des dénivelés
+                    _, lat1, lon1, ele1 = points[i - 1]
+                    _, lat2, lon2, ele2 = points[i]
+                    distance_totale += haversine(lat1, lon1, lat2, lon2)
+                    denivele_positif += max(0, ele2 - ele1)
+                    denivele_negatif += max(0, ele1 - ele2)
+
+    # Afficher le résumé dans le terminal
+    print("=== Résumé du fichier GPX ===")
+    print(f"Distance totale : {distance_totale:.2f} km")
+    print(f"Dénivelé positif : {denivele_positif:.2f} m")
+    print(f"Dénivelé négatif : {denivele_negatif:.2f} m")
+
     return points
 
 def haversine(lat1, lon1, lat2, lon2):
@@ -68,6 +86,25 @@ def calcul_etapes(points, distance_etape_km):
                 "Cumul temps (horaire)": f"{int(temps_total)}h{int((temps_total*60)%60):02d}"
             })
             dist, d_plus, d_moins = 0, 0, 0
+
+   # Ajouter une dernière étape pour la distance restante
+    if dist > 0:
+        effort = dist + (d_plus / 100) * 0.8
+        vitesse = vitesse_plat * (1 / (1 + d_plus / 500))
+        temps_h = effort / vitesse * fatigue_coeff
+        temps_total += temps_h
+
+        etapes.append({
+            "Étape": len(etapes) + 1,
+            "Distance (km)": round(dist, 2),
+            "D+ (m)": int(d_plus),
+            "D- (m)": int(d_moins),
+            "Temps (min)": int(temps_h * 60),
+            "Temps (horaire)": f"{int(temps_h)}h{int((temps_h*60)%60):02d}",
+            "Cumul distance (km)": round(d_tot, 2),
+            "Cumul temps (horaire)": f"{int(temps_total)}h{int((temps_total*60)%60):02d}"
+        })
+
 
     return pd.DataFrame(etapes)
 
@@ -177,6 +214,12 @@ def export_pdf_plan(plan_df, filename="plan_entraînement_resume.pdf"):
 points = lire_trace_gpx(fichier_gpx)
 df_etapes = calcul_etapes(points, distance_etape_km)
 
+# Calculer le résumé du fichier GPX
+distance_totale = sum(haversine(lat1, lon1, lat2, lon2) for (_, lat1, lon1, _), (_, lat2, lon2, _) in zip(points[:-1], points[1:]))
+denivele_positif = sum(max(0, ele2 - ele1) for (_, _, _, ele1), (_, _, _, ele2) in zip(points[:-1], points[1:]))
+denivele_negatif = sum(max(0, ele1 - ele2) for (_, _, _, ele1), (_, _, _, ele2) in zip(points[:-1], points[1:]))
+
+
 # Afficher le tableau des temps de passage dans le terminal
 print("=== Tableau des Temps de Passage ===")
 print(df_etapes.to_string(index=False))
@@ -188,6 +231,12 @@ with pd.ExcelWriter("planning_course_et_entrainement.xlsx", engine="xlsxwriter")
     df_etapes.to_excel(writer, sheet_name="Temps de passage", index=False)
     plan_df.to_excel(writer, sheet_name="Plan Entrainement", index=False)
     resume_df.to_excel(writer, sheet_name="Résumé Hebdo", index=False)
+
+# Afficher le résumé du fichier GPX à la fin
+print("\n=== Résumé Final du Fichier GPX ===")
+print(f"Distance totale : {distance_totale:.2f} km")
+print(f"Dénivelé positif : {denivele_positif:.2f} m")
+print(f"Dénivelé négatif : {denivele_negatif:.2f} m")
 
 export_pdf_plan(plan_df)
 print("✅ Fichiers générés : Excel + PDF")
