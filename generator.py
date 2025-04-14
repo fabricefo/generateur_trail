@@ -108,12 +108,28 @@ def calcul_etapes(points, distance_etape_km):
 
     return pd.DataFrame(etapes)
 
+def calculer_nb_semaines(distance_totale, denivele_positif):
+    # Base de 8 semaines pour une distance de 40 km et un dénivelé modéré
+    base_semaines = 8
+    ajout_distance = max(0, (distance_totale - 40) // 10)  # Ajouter 1 semaine par tranche de 10 km au-delà de 40 km
+    ajout_difficulte = max(0, denivele_positif // 1000)  # Ajouter 1 semaine par tranche de 1000 m de D+
+    return base_semaines + int(ajout_distance) + int(ajout_difficulte)
+
 # === PLAN D’ENTRAÎNEMENT ===
 
 def generer_plan(nb_semaines, seances_semaine, objectif, date_course, distance_totale, denivele_positif):
     base_date = datetime.strptime(date_course, "%Y-%m-%d") - timedelta(weeks=nb_semaines)
     jours_semaine = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
     plan = []
+
+    # Fixer la phase "course" à 1 semaine
+    phase_course = 1
+    semaines_restantes = nb_semaines - phase_course
+
+    # Répartir les autres phases proportionnellement
+    phase_generale = max(1, int(semaines_restantes * 0.4))  # 40% des semaines restantes
+    phase_specifique = max(1, int(semaines_restantes * 0.5))  # 50% des semaines restantes
+    phase_affutage = max(1, semaines_restantes - (phase_generale + phase_specifique))  # Reste pour l'affûtage
 
     # Ajuster les sorties longues en fonction de la distance totale et du dénivelé
     sortie_longue_base = 90  # Durée de base en minutes
@@ -122,12 +138,15 @@ def generer_plan(nb_semaines, seances_semaine, objectif, date_course, distance_t
     sortie_longue_duree = sortie_longue_base + ajout_duree + ajout_difficulte
 
     for semaine in range(nb_semaines):
-        phase = (
-            "générale" if semaine < 2 else
-            "spécifique" if semaine < 5 else
-            "affûtage" if semaine < 7 else
-            "course"
-        )
+        # Déterminer la phase en fonction de la semaine
+        if semaine < phase_generale:
+            phase = "générale"
+        elif semaine < phase_generale + phase_specifique:
+            phase = "spécifique"
+        elif semaine < phase_generale + phase_specifique + phase_affutage:
+            phase = "affûtage"
+        else:
+            phase = "course"
 
         types_seances = {
             "générale": ["Footing", "PPG / Renfo", "Vélo", "Sortie Longue"],
@@ -226,6 +245,9 @@ distance_totale = sum(haversine(lat1, lon1, lat2, lon2) for (_, lat1, lon1, _), 
 denivele_positif = sum(max(0, ele2 - ele1) for (_, _, _, ele1), (_, _, _, ele2) in zip(points[:-1], points[1:]))
 denivele_negatif = sum(max(0, ele1 - ele2) for (_, _, _, ele1), (_, _, _, ele2) in zip(points[:-1], points[1:]))
 
+# Ajuster dynamiquement le nombre de semaines
+nb_semaines = calculer_nb_semaines(distance_totale, denivele_positif)
+print(f"Nombre de semaines d'entraînement ajusté : {nb_semaines}")
 
 # Afficher le tableau des temps de passage dans le terminal
 print("=== Tableau des Temps de Passage ===")
