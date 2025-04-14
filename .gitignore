@@ -1,0 +1,8 @@
+# Ignorer les fichiers Excel
+*.xlsx
+
+# Ignorer les fichiers GPX
+*.gpx
+
+# Ignorer les fichiers PDF
+*.pdf
