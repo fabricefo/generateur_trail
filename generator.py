@@ -6,7 +6,7 @@ from math import sqrt
 from fpdf import FPDF
 
 # === PARAMÈTRES UTILISATEUR ===
-fichier_gpx = "Trace_Cassis.gpx"
+fichier_gpx = "beaujolais-villages-trail-2025-ultra-bvt.gpx"
 distance_etape_km = 5
 vitesse_plat = 9  # km/h
 fatigue_coeff = 1.05
@@ -176,6 +176,11 @@ def export_pdf_plan(plan_df, filename="plan_entraînement_resume.pdf"):
 
 points = lire_trace_gpx(fichier_gpx)
 df_etapes = calcul_etapes(points, distance_etape_km)
+
+# Afficher le tableau des temps de passage dans le terminal
+print("=== Tableau des Temps de Passage ===")
+print(df_etapes.to_string(index=False))
+
 plan_df = generer_plan(nb_semaines, seances_par_semaine, objectif, date_course)
 resume_df = ajouter_resume_hebdo(plan_df)
 

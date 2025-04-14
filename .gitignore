@@ -1,6 +1,7 @@
-# Ignorer les fichiers Excel
+# Ignorer les fichiers Excel et CSV
 *.xlsx
-
+*.csv
+# Ignorer les fichiers de configuration de l'IDE
 # Ignorer les fichiers GPX
 *.gpx
 
