@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Résultats</title>
+</head>
+<body>
+    <h1>Résultats de l'Analyse</h1>
+    <p><strong>Distance totale :</strong> {{ distance_totale }} km</p>
+    <p><strong>Dénivelé positif :</strong> {{ denivele_positif }} m</p>
+    <p><strong>Nombre de semaines d'entraînement :</strong> {{ nb_semaines }}</p>
+
+    <h2>Plan d'Entraînement</h2>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Semaine</th>
+                <th>Date</th>
+                <th>Jour</th>
+                <th>Type</th>
+                <th>Contenu</th>
+                <th>Conseil</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in plan %}
+            <tr>
+                <td>{{ row['Semaine'] }}</td>
+                <td>{{ row['Date'] }}</td>
+                <td>{{ row['Jour'] }}</td>
+                <td>{{ row['Type'] }}</td>
+                <td>{{ row['Contenu'] }}</td>
+                <td>{{ row['Conseil'] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h2>Téléchargements</h2>
+    <p><a href="/plan_entraînement.csv" download>📥 Télécharger le plan d'entraînement (CSV)</a></p>
+    <p><a href="/plan_entraînement_resume.pdf" download>📥 Télécharger le plan d'entraînement (PDF)</a></p>
+</body>
+</html>

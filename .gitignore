@@ -7,3 +7,12 @@
 
 # Ignorer les fichiers PDF
 *.pdf
+
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# uploads files
+uploads/
