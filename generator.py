@@ -4,6 +4,9 @@ import unicodedata
 from datetime import datetime, timedelta
 from math import sqrt
 from fpdf import FPDF
+import locale
+
+locale.setlocale(locale.LC_TIME, "French_France.1252")
 
 # === PARAMÈTRES UTILISATEUR ===
 fichier_gpx = "beaujolais-villages-trail-2025-ultra-bvt.gpx"
@@ -49,7 +52,7 @@ def haversine(lat1, lon1, lat2, lon2):
     from math import radians, sin, cos, sqrt, atan2
     R = 6371.0  # Rayon de la Terre
     dlat = radians(lat2 - lat1)
-    dlon = radians(lon2 - lon1)
+    dlon = radians(lon1 - lon2)
     a = sin(dlat/2)**2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlon/2)**2
     c = 2 * atan2(sqrt(a), sqrt(1 - a))
     return R * c
@@ -117,9 +120,18 @@ def calculer_nb_semaines(distance_totale, denivele_positif):
 
 # === PLAN D’ENTRAÎNEMENT ===
 
-def generer_plan(nb_semaines, seances_semaine, objectif, date_course, distance_totale, denivele_positif):
+def generer_plan(nb_semaines, objectif, date_course, distance_totale, denivele_positif):
     base_date = datetime.strptime(date_course, "%Y-%m-%d") - timedelta(weeks=nb_semaines)
     jours_semaine = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
+
+    # Déterminer le nombre de séances par semaine en fonction de la distance
+    if distance_totale > 50:
+        seances_par_semaine = 5
+        jours_seances = ["Mardi", "Mercredi", "Jeudi", "Samedi", "Dimanche"]
+    else:
+        seances_par_semaine = 4
+        jours_seances = ["Mardi", "Mercredi", "Samedi", "Dimanche"]
+
     plan = []
 
     # Fixer la phase "course" à 1 semaine
@@ -156,18 +168,21 @@ def generer_plan(nb_semaines, seances_semaine, objectif, date_course, distance_t
         }[phase]
 
         jours_utilisés = 0
-        for j in range(7):
-            if jours_utilisés >= seances_semaine:
+        for jour in jours_seances:
+            if jours_utilisés >= seances_par_semaine:
                 break
-            date = base_date + timedelta(weeks=semaine, days=j)
-            jour = jours_semaine[j % 7]
+            date = base_date + timedelta(weeks=semaine, days=jours_semaine.index(jour))
             type_seance = types_seances[jours_utilisés % len(types_seances)]
 
             # Ajuster le contenu des séances
+            duree_sl = sortie_longue_duree + semaine * 5
+            heures = duree_sl // 60
+            minutes = duree_sl % 60
+            duree_sl = f"{heures}h{minutes:02d} trail vallonné"
             contenu = {
                 "Footing": "45-60 min allure facile",
                 "PPG / Renfo": "30-40 min gainage + renfo",
-                "Sortie Longue": f"{sortie_longue_duree + semaine * 5} min trail vallonné",
+                "Sortie Longue": duree_sl,
                 "Vélo": "1h tranquille ou 45 min home-trainer",
                 "Seuil": "2x10 à 3x10 min allure tempo",
                 "VMA": "8x45s vite / 45s récup",
@@ -191,7 +206,7 @@ def generer_plan(nb_semaines, seances_semaine, objectif, date_course, distance_t
             plan.append({
                 "Semaine": semaine + 1,
                 "Phase": phase,
-                "Date": date.strftime("%Y-%m-%d"),
+                "Date": date.strftime("%d %B %Y").lower(),
                 "Jour": jour,
                 "Type": type_seance,
                 "Contenu": contenu,
@@ -214,6 +229,9 @@ def nettoyer_texte(txt):
     return txt
 
 def export_pdf_plan(plan_df, filename="plan_entraînement_resume.pdf"):
+    """
+    Exporte le plan d'entraînement sous forme de tableau hebdomadaire dans un fichier PDF.
+    """
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
@@ -225,13 +243,25 @@ def export_pdf_plan(plan_df, filename="plan_entraînement_resume.pdf"):
         phase = plan_df[plan_df['Semaine'] == semaine]['Phase'].iloc[0]
         pdf.set_font("Arial", 'B', size=12)
         pdf.cell(200, 10, nettoyer_texte(f"Semaine {semaine} - Phase: {phase}"), ln=True)
+        pdf.ln(5)
 
+        # Ajouter un tableau pour la semaine
         pdf.set_font("Arial", size=10)
+        pdf.cell(30, 8, "Jour", border=1, align='C')
+        pdf.cell(40, 8, "Date", border=1, align='C')
+        pdf.cell(50, 8, "Type", border=1, align='C')
+        pdf.cell(70, 8, "Contenu", border=1, align='C')
+        pdf.ln()
+
         semaine_data = plan_df[plan_df['Semaine'] == semaine]
         for _, row in semaine_data.iterrows():
-            line = f"{row['Jour']} {row['Date']}: {row['Type']} - {row['Contenu']} ({row['Conseil']})"
-            pdf.multi_cell(0, 8, nettoyer_texte(line))
-        pdf.ln(4)
+            pdf.cell(30, 8, nettoyer_texte(row['Jour']), border=1)
+            pdf.cell(40, 8, nettoyer_texte(row['Date']), border=1)
+            pdf.cell(50, 8, nettoyer_texte(row['Type']), border=1)
+            pdf.cell(70, 8, nettoyer_texte(row['Contenu']), border=1)
+            pdf.ln()
+
+        pdf.ln(5)
 
     pdf.output(filename)
     
@@ -253,7 +283,7 @@ print(f"Nombre de semaines d'entraînement ajusté : {nb_semaines}")
 print("=== Tableau des Temps de Passage ===")
 print(df_etapes.to_string(index=False))
 
-plan_df = generer_plan(nb_semaines, seances_par_semaine, objectif, date_course, distance_totale, denivele_positif)
+plan_df = generer_plan(nb_semaines, objectif, date_course, distance_totale, denivele_positif)
 resume_df = ajouter_resume_hebdo(plan_df)
 
 with pd.ExcelWriter("planning_course_et_entrainement.xlsx", engine="xlsxwriter") as writer:
