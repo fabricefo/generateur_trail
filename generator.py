@@ -14,6 +14,10 @@ locale.setlocale(locale.LC_TIME, "French_France.1252")
 # Répertoire contenant les fichiers GPX
 repertoire_gpx = "gpx"
 
+# Répertoire pour les fichiers générés
+repertoire_results = "results"
+os.makedirs(repertoire_results, exist_ok=True)  # Crée le répertoire s'il n'existe pas
+
 # Lister les fichiers GPX dans le répertoire et extraire les informations
 fichiers_gpx = {}
 for idx, fichier in enumerate((f for f in os.listdir(repertoire_gpx) if f.lower().endswith(".gpx")), start=1):
@@ -385,8 +389,8 @@ def export_pdf_plan(plan_df, filename="plan_entraînement_resume.pdf"):
 nom_fichier = nettoyer_nom_fichier(nom_parcours)
 
 # Générer les noms des fichiers
-fichier_excel = f"{nom_fichier}_planning_course.xlsx"
-fichier_pdf = f"{nom_fichier}_plan_entraînement_resume.pdf"
+fichier_excel = os.path.join(repertoire_results, f"{nom_fichier}_planning_course.xlsx")
+fichier_pdf = os.path.join(repertoire_results, f"{nom_fichier}_plan_entraînement_resume.pdf")
 
 # === EXÉCUTION ===
 
@@ -421,4 +425,4 @@ print(f"Dénivelé positif : {denivele_positif:.2f} m")
 print(f"Dénivelé négatif : {denivele_negatif:.2f} m")
 
 export_pdf_plan(plan_df, filename=fichier_pdf)
-print("✅ Fichiers générés : Excel + PDF")
+print(f"✅ Fichiers générés dans le répertoire '{repertoire_results}' : Excel + PDF")
