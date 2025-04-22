@@ -53,7 +53,6 @@ date_course = fichiers_gpx[choix]["date_course"]
 
 distance_etape_km = 5
 vitesse_plat = 10  # km/h
-fatigue_coeff = 1.05
 nb_semaines = 8
 seances_par_semaine = 4
 objectif = "Finir avec plaisir"
@@ -182,6 +181,9 @@ def generer_plan(nb_semaines, objectif, date_course, distance_totale, denivele_p
 
     # Déterminer le nombre de séances par semaine en fonction de la distance
     if distance_totale > 50:
+        seances_par_semaine = 6
+        jours_seances = ["Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
+    elif distance_totale > 30:
         seances_par_semaine = 5
         jours_seances = ["Mardi", "Mercredi", "Jeudi", "Samedi", "Dimanche"]
     else:
@@ -205,6 +207,82 @@ def generer_plan(nb_semaines, objectif, date_course, distance_totale, denivele_p
     ajout_difficulte = int(denivele_positif / 500)  # Ajouter 5 min par 500 m de D+
     sortie_longue_duree = sortie_longue_base + ajout_duree + ajout_difficulte
 
+    # Nouveau tableau des types de séances par phase et jour
+    types_seances = {
+        "générale": {
+            "Mardi": "Footing",
+            "Mercredi": "PPG / Renfo",
+            "Jeudi": "Vélo",
+            "Vendredi": "Repos",
+            "Samedi": "Sortie Longue",
+            "Dimanche": "Footing"
+        },
+        "spécifique": {
+            "Mardi": "Seuil",
+            "Mercredi": "PPG / Renfo",
+            "Jeudi": "VMA",
+            "Vendredi": "Repos",
+            "Samedi": "Sortie Longue",
+            "Dimanche": "Vélo"
+        },
+        "affûtage": {
+            "Mardi": "Footing",
+            "Mercredi": "PPG / Renfo",
+            "Jeudi": "Seuil",
+            "Vendredi": "Repos",
+            "Samedi": "Sortie Moyenne",
+            "Dimanche": "Repos"
+        },
+        "course": {
+            "Mardi": "Footing",
+            "Mercredi": "VMA",
+            "Jeudi": "Repos",
+            "Vendredi": "Repos",
+            "Samedi": "Repos",
+            "Dimanche": "Course"
+        }
+    }
+
+    # Contenu et conseils associés à chaque type de séance
+    contenu_et_conseils = {
+        "Footing": {
+            "contenu": "45-60 min allure facile",
+            "conseil": "Relâchement et aisance"
+        },
+        "PPG / Renfo": {
+            "contenu": "30-40 min gainage + renfo",
+            "conseil": "Posture, contrôle"
+        },
+        "Sortie Longue": {
+            "contenu": f"{sortie_longue_duree // 60}h{sortie_longue_duree % 60:02d} trail vallonné",
+            "conseil": "Hydrate-toi bien"
+        },
+        "Vélo": {
+            "contenu": "1h tranquille ou 45 min home-trainer",
+            "conseil": "Cadence souple, récup"
+        },
+        "Seuil": {
+            "contenu": "2x10 à 3x10 min allure tempo",
+            "conseil": "Tiens l’allure, respire"
+        },
+        "VMA": {
+            "contenu": "8x45s vite / 45s récup",
+            "conseil": "Explosivité, légèreté"
+        },
+        "Sortie Moyenne": {
+            "contenu": "1h sur sentiers, allure confortable",
+            "conseil": "Bonne foulée, régularité"
+        },
+        "Repos": {
+            "contenu": "Repos complet ou 30 min marche",
+            "conseil": "Bien dormir !"
+        },
+        "Course": {
+            "contenu": "Jour J ! Donne tout 😉",
+            "conseil": "Rappelle-toi pourquoi tu cours"
+        }
+    }
+
     # Calculer les séances semaine par semaine
     for semaine in range(nb_semaines):
         # Déterminer la phase en fonction de la semaine
@@ -217,13 +295,6 @@ def generer_plan(nb_semaines, objectif, date_course, distance_totale, denivele_p
         else:
             phase = "course"
 
-        types_seances = {
-            "générale": ["Footing", "PPG / Renfo", "Vélo", "Sortie Longue"],
-            "spécifique": ["Seuil", "PPG / Renfo", "VMA", "Sortie Longue", "Vélo"],
-            "affûtage": ["Footing", "PPG / Renfo", "Seuil", "Sortie Moyenne"],
-            "course": ["Footing", "VMA", "Repos", "Course"]
-        }[phase]
-
         jours_utilisés = 0
         for jour in jours_seances:
             if jours_utilisés >= seances_par_semaine:
@@ -233,36 +304,12 @@ def generer_plan(nb_semaines, objectif, date_course, distance_totale, denivele_p
             jour_index = jours_semaine.index(jour)
             date = date_course_obj - timedelta(weeks=(nb_semaines - semaine - 1), days=(5 - jour_index))
 
-            type_seance = types_seances[jours_utilisés % len(types_seances)]
+            # Récupérer le type de séance pour le jour et la phase
+            type_seance = types_seances[phase].get(jour, "Repos")
 
-            # Ajuster le contenu des séances
-            duree_sl = sortie_longue_duree + semaine * 5
-            heures = duree_sl // 60
-            minutes = duree_sl % 60
-            duree_sl = f"{heures}h{minutes:02d} trail vallonné"
-            contenu = {
-                "Footing": "45-60 min allure facile",
-                "PPG / Renfo": "30-40 min gainage + renfo",
-                "Sortie Longue": duree_sl,
-                "Vélo": "1h tranquille ou 45 min home-trainer",
-                "Seuil": "2x10 à 3x10 min allure tempo",
-                "VMA": "8x45s vite / 45s récup",
-                "Sortie Moyenne": "1h sur sentiers, allure confortable",
-                "Repos": "Repos complet ou 30 min marche",
-                "Course": "Jour J ! Donne tout 😉"
-            }.get(type_seance, "Footing 45 min")
-
-            conseil = {
-                "Footing": "Relâchement et aisance",
-                "PPG / Renfo": "Posture, contrôle",
-                "Sortie Longue": "Hydrate-toi bien",
-                "Vélo": "Cadence souple, récup",
-                "Seuil": "Tiens l’allure, respire",
-                "VMA": "Explosivité, légèreté",
-                "Sortie Moyenne": "Bonne foulée, régularité",
-                "Repos": "Bien dormir !",
-                "Course": "Rappelle-toi pourquoi tu cours"
-            }.get(type_seance, "")
+            # Récupérer le contenu et le conseil associés au type de séance
+            contenu = contenu_et_conseils[type_seance]["contenu"]
+            conseil = contenu_et_conseils[type_seance]["conseil"]
 
             plan.append({
                 "Semaine": semaine + 1,
