@@ -281,7 +281,7 @@ def generer_plan(nb_semaines, objectif, date_course, distance_totale, denivele_p
                 "conseil": "Posture, contrôle"
             },
             "Sortie Longue": {
-                "contenu": f"{duree_sl} trail vallonné",
+                "contenu": f"{duree_sl}",
                 "conseil": "Hydrate-toi bien"
             },
             "Vélo": {
