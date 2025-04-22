@@ -12,7 +12,7 @@ locale.setlocale(locale.LC_TIME, "French_France.1252")
 fichier_gpx = "tiger-balm-ultra-01-2025-tiger-balm-ultra-01-45-km.gpx"
 nom_parcours = "Tiger Balm Ultra 2025 - 45km"
 distance_etape_km = 5
-vitesse_plat = 9  # km/h
+vitesse_plat = 10  # km/h
 fatigue_coeff = 1.05
 nb_semaines = 8
 seances_par_semaine = 4
@@ -74,10 +74,20 @@ def calcul_etapes(points, distance_etape_km):
         d_moins += max(0, ele1 - ele2)
 
         if dist >= distance_etape_km:
-            effort = dist + (d_plus / 100) * 0.8
-            vitesse = vitesse_plat * (1 / (1 + d_plus / 500))
-            temps_h = effort / vitesse * fatigue_coeff
+            # effort = dist + (d_plus / 100) * 0.8
+            # vitesse = vitesse_plat * (1 / (1 + d_plus / 500))
+            # temps_h = effort / vitesse * fatigue_coeff
+            
+            effort = dist + (d_plus / 100)
+            fatigue_coeff = 1 - (dist-distance_etape_km)/100
+            diff_coeff = 1 - d_plus/2000    
+            vitesse = vitesse_plat * fatigue_coeff * diff_coeff
+            temps_h = effort / vitesse
+
             temps_total += temps_h
+
+            # Calcul de la vitesse moyenne
+            vitesse_moyenne = dist / temps_h if temps_h > 0 else 0
 
             etapes.append({
                 "Étape": len(etapes) + 1,
@@ -86,17 +96,21 @@ def calcul_etapes(points, distance_etape_km):
                 "D- (m)": int(d_moins),
                 "Temps (min)": int(temps_h * 60),
                 "Temps (horaire)": f"{int(temps_h)}h{int((temps_h*60)%60):02d}",
+                "Vitesse moyenne (km/h)": round(vitesse_moyenne, 2),
                 "Cumul distance (km)": round(d_tot, 2),
                 "Cumul temps (horaire)": f"{int(temps_total)}h{int((temps_total*60)%60):02d}"
             })
             dist, d_plus, d_moins = 0, 0, 0
 
-   # Ajouter une dernière étape pour la distance restante
+    # Ajouter une dernière étape pour la distance restante
     if dist > 0:
         effort = dist + (d_plus / 100) * 0.8
         vitesse = vitesse_plat * (1 / (1 + d_plus / 500))
         temps_h = effort / vitesse * fatigue_coeff
         temps_total += temps_h
+
+        # Calcul de la vitesse moyenne pour la dernière étape
+        vitesse_moyenne = dist / temps_h if temps_h > 0 else 0
 
         etapes.append({
             "Étape": len(etapes) + 1,
@@ -105,10 +119,10 @@ def calcul_etapes(points, distance_etape_km):
             "D- (m)": int(d_moins),
             "Temps (min)": int(temps_h * 60),
             "Temps (horaire)": f"{int(temps_h)}h{int((temps_h*60)%60):02d}",
+            "Vitesse moyenne (km/h)": round(vitesse_moyenne, 2),
             "Cumul distance (km)": round(d_tot, 2),
             "Cumul temps (horaire)": f"{int(temps_total)}h{int((temps_total*60)%60):02d}"
         })
-
 
     return pd.DataFrame(etapes)
 
@@ -292,6 +306,10 @@ fichier_pdf = f"{nom_fichier}_plan_entraînement_resume.pdf"
 points = lire_trace_gpx(fichier_gpx)
 df_etapes = calcul_etapes(points, distance_etape_km)
 
+# Afficher le tableau des temps de passage dans le terminal
+print("=== Tableau des Temps de Passage ===")
+print(df_etapes.to_string(index=False))
+
 # Calculer le résumé du fichier GPX
 distance_totale = sum(haversine(lat1, lon1, lat2, lon2) for (_, lat1, lon1, _), (_, lat2, lon2, _) in zip(points[:-1], points[1:]))
 denivele_positif = sum(max(0, ele2 - ele1) for (_, _, _, ele1), (_, _, _, ele2) in zip(points[:-1], points[1:]))
@@ -300,10 +318,6 @@ denivele_negatif = sum(max(0, ele1 - ele2) for (_, _, _, ele1), (_, _, _, ele2) 
 # Ajuster dynamiquement le nombre de semaines
 nb_semaines = calculer_nb_semaines(distance_totale, denivele_positif)
 print(f"Nombre de semaines d'entraînement ajusté : {nb_semaines}")
-
-# Afficher le tableau des temps de passage dans le terminal
-print("=== Tableau des Temps de Passage ===")
-print(df_etapes.to_string(index=False))
 
 plan_df = generer_plan(nb_semaines, objectif, date_course, distance_totale, denivele_positif)
 resume_df = ajouter_resume_hebdo(plan_df)
