@@ -9,14 +9,15 @@ import locale
 locale.setlocale(locale.LC_TIME, "French_France.1252")
 
 # === PARAMÈTRES UTILISATEUR ===
-fichier_gpx = "beaujolais-villages-trail-2025-ultra-bvt.gpx"
+fichier_gpx = "tiger-balm-ultra-01-2025-tiger-balm-ultra-01-45-km.gpx"
+nom_parcours = "Tiger Balm Ultra 2025 - 45km"
 distance_etape_km = 5
 vitesse_plat = 9  # km/h
 fatigue_coeff = 1.05
 nb_semaines = 8
 seances_par_semaine = 4
 objectif = "Finir avec plaisir"
-date_course = "2025-06-01"
+date_course = "2025-07-19"
 
 # === FONCTIONS UTILITAIRES ===
 
@@ -228,6 +229,12 @@ def nettoyer_texte(txt):
     txt = unicodedata.normalize('NFKD', txt).encode('ascii', 'ignore').decode('ascii')
     return txt
 
+def nettoyer_nom_fichier(nom):
+    """
+    Nettoie le nom du parcours pour l'utiliser dans les noms de fichiers.
+    """
+    return unicodedata.normalize('NFKD', nom).encode('ascii', 'ignore').decode('ascii').replace(' ', '_').replace('-', '_')
+
 def export_pdf_plan(plan_df, filename="plan_entraînement_resume.pdf"):
     """
     Exporte le plan d'entraînement sous forme de tableau hebdomadaire dans un fichier PDF.
@@ -235,8 +242,10 @@ def export_pdf_plan(plan_df, filename="plan_entraînement_resume.pdf"):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
-    titre = "Résumé Hebdomadaire du Plan d’Entraînement"
-    pdf.cell(200, 10, txt=nettoyer_texte(titre), ln=True, align='C')
+
+    # Ajouter le titre avec le nom du parcours
+    titre = f"Résumé Hebdomadaire du Plan d’Entraînement\n{nom_parcours}"
+    pdf.multi_cell(0, 10, txt=nettoyer_texte(titre), align='C')
 
     semaines = plan_df['Semaine'].unique()
     for semaine in semaines:
@@ -265,6 +274,13 @@ def export_pdf_plan(plan_df, filename="plan_entraînement_resume.pdf"):
 
     pdf.output(filename)
     
+# Nettoyer le nom du parcours pour les fichiers
+nom_fichier = nettoyer_nom_fichier(nom_parcours)
+
+# Générer les noms des fichiers
+fichier_excel = f"{nom_fichier}_planning_course_et_entrainement.xlsx"
+fichier_pdf = f"{nom_fichier}_plan_entraînement_resume.pdf"
+
 # === EXÉCUTION ===
 
 points = lire_trace_gpx(fichier_gpx)
@@ -286,7 +302,7 @@ print(df_etapes.to_string(index=False))
 plan_df = generer_plan(nb_semaines, objectif, date_course, distance_totale, denivele_positif)
 resume_df = ajouter_resume_hebdo(plan_df)
 
-with pd.ExcelWriter("planning_course_et_entrainement.xlsx", engine="xlsxwriter") as writer:
+with pd.ExcelWriter(fichier_excel, engine="xlsxwriter") as writer:
     df_etapes.to_excel(writer, sheet_name="Temps de passage", index=False)
     plan_df.to_excel(writer, sheet_name="Plan Entrainement", index=False)
     resume_df.to_excel(writer, sheet_name="Résumé Hebdo", index=False)
@@ -297,5 +313,5 @@ print(f"Distance totale : {distance_totale:.2f} km")
 print(f"Dénivelé positif : {denivele_positif:.2f} m")
 print(f"Dénivelé négatif : {denivele_negatif:.2f} m")
 
-export_pdf_plan(plan_df)
+export_pdf_plan(plan_df, filename=fichier_pdf)
 print("✅ Fichiers générés : Excel + PDF")
