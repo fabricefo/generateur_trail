@@ -122,7 +122,8 @@ def calculer_nb_semaines(distance_totale, denivele_positif):
 # === PLAN D’ENTRAÎNEMENT ===
 
 def generer_plan(nb_semaines, objectif, date_course, distance_totale, denivele_positif):
-    base_date = datetime.strptime(date_course, "%Y-%m-%d") - timedelta(weeks=nb_semaines)
+    # Calculer la date de la course
+    date_course_obj = datetime.strptime(date_course, "%Y-%m-%d")
     jours_semaine = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
 
     # Déterminer le nombre de séances par semaine en fonction de la distance
@@ -150,6 +151,7 @@ def generer_plan(nb_semaines, objectif, date_course, distance_totale, denivele_p
     ajout_difficulte = int(denivele_positif / 500)  # Ajouter 5 min par 500 m de D+
     sortie_longue_duree = sortie_longue_base + ajout_duree + ajout_difficulte
 
+    # Calculer les séances semaine par semaine
     for semaine in range(nb_semaines):
         # Déterminer la phase en fonction de la semaine
         if semaine < phase_generale:
@@ -172,7 +174,11 @@ def generer_plan(nb_semaines, objectif, date_course, distance_totale, denivele_p
         for jour in jours_seances:
             if jours_utilisés >= seances_par_semaine:
                 break
-            date = base_date + timedelta(weeks=semaine, days=jours_semaine.index(jour))
+
+            # Calculer la date exacte pour le jour de la séance
+            jour_index = jours_semaine.index(jour)
+            date = date_course_obj - timedelta(weeks=(nb_semaines - semaine - 1), days=(5 - jour_index))
+
             type_seance = types_seances[jours_utilisés % len(types_seances)]
 
             # Ajuster le contenu des séances
@@ -278,7 +284,7 @@ def export_pdf_plan(plan_df, filename="plan_entraînement_resume.pdf"):
 nom_fichier = nettoyer_nom_fichier(nom_parcours)
 
 # Générer les noms des fichiers
-fichier_excel = f"{nom_fichier}_planning_course_et_entrainement.xlsx"
+fichier_excel = f"{nom_fichier}_planning_course.xlsx"
 fichier_pdf = f"{nom_fichier}_plan_entraînement_resume.pdf"
 
 # === EXÉCUTION ===
