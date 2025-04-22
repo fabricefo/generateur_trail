@@ -147,11 +147,15 @@ def calcul_etapes(points, distance_etape_km):
 
    # Ajouter une dernière étape pour la distance restante
     if dist > 0:
-        effort = dist + (d_plus / 100) * 0.8
-        vitesse = vitesse_plat * (1 / (1 + d_plus / 500))
-        temps_h = effort / vitesse * fatigue_coeff
-        temps_total += temps_h
 
+        effort = dist + (d_plus / 100)
+        fatigue_coeff = 1 - (dist-distance_etape_km)/100
+        diff_coeff = 1 - d_plus/2000    
+        vitesse = vitesse_plat * fatigue_coeff * diff_coeff
+        temps_h = effort / vitesse
+
+        temps_total += temps_h
+        
         # Calcul de la vitesse moyenne pour la dernière étape
         vitesse_moyenne = dist / temps_h if temps_h > 0 else 0
 
@@ -247,45 +251,6 @@ def generer_plan(nb_semaines, objectif, date_course, distance_totale, denivele_p
         }
     }
 
-    # Contenu et conseils associés à chaque type de séance
-    contenu_et_conseils = {
-        "Footing": {
-            "contenu": "45-60 min allure facile",
-            "conseil": "Relâchement et aisance"
-        },
-        "PPG / Renfo": {
-            "contenu": "30-40 min gainage + renfo",
-            "conseil": "Posture, contrôle"
-        },
-        "Sortie Longue": {
-            "contenu": f"{sortie_longue_duree // 60}h{sortie_longue_duree % 60:02d} trail vallonné",
-            "conseil": "Hydrate-toi bien"
-        },
-        "Vélo": {
-            "contenu": "1h tranquille ou 45 min home-trainer",
-            "conseil": "Cadence souple, récup"
-        },
-        "Seuil": {
-            "contenu": "2x10 à 3x10 min allure tempo",
-            "conseil": "Tiens l’allure, respire"
-        },
-        "VMA": {
-            "contenu": "8x45s vite / 45s récup",
-            "conseil": "Explosivité, légèreté"
-        },
-        "Sortie Moyenne": {
-            "contenu": "1h sur sentiers, allure confortable",
-            "conseil": "Bonne foulée, régularité"
-        },
-        "Repos": {
-            "contenu": "Repos complet ou 30 min marche",
-            "conseil": "Bien dormir !"
-        },
-        "Course": {
-            "contenu": "Jour J ! Donne tout 😉",
-            "conseil": "Rappelle-toi pourquoi tu cours"
-        }
-    }
 
     # Calculer les séances semaine par semaine
     for semaine in range(nb_semaines):
@@ -298,6 +263,52 @@ def generer_plan(nb_semaines, objectif, date_course, distance_totale, denivele_p
             phase = "affûtage"
         else:
             phase = "course"
+
+        # Calcul des sorties longues
+        duree_sl = sortie_longue_duree + semaine * 5
+        heures = duree_sl // 60
+        minutes = duree_sl % 60
+        duree_sl = f"{heures}h{minutes:02d} trail vallonné"
+
+        # Contenu et conseils associés à chaque type de séance
+        contenu_et_conseils = {
+            "Footing": {
+                "contenu": "45-60 min allure facile",
+                "conseil": "Relâchement et aisance"
+            },
+            "PPG / Renfo": {
+                "contenu": "30-40 min gainage + renfo",
+                "conseil": "Posture, contrôle"
+            },
+            "Sortie Longue": {
+                "contenu": f"{duree_sl} trail vallonné",
+                "conseil": "Hydrate-toi bien"
+            },
+            "Vélo": {
+                "contenu": "1h tranquille ou 45 min home-trainer",
+                "conseil": "Cadence souple, récup"
+            },
+            "Seuil": {
+                "contenu": "2x10 à 3x10 min allure tempo",
+                "conseil": "Tiens l’allure, respire"
+            },
+            "VMA": {
+                "contenu": "8x45s vite / 45s récup",
+                "conseil": "Explosivité, légèreté"
+            },
+            "Sortie Moyenne": {
+                "contenu": "1h sur sentiers, allure confortable",
+                "conseil": "Bonne foulée, régularité"
+            },
+            "Repos": {
+                "contenu": "Repos complet ou 30 min marche",
+                "conseil": "Bien dormir !"
+            },
+            "Course": {
+                "contenu": "Jour J ! Donne tout 😉",
+                "conseil": "Rappelle-toi pourquoi tu cours"
+            }
+        }
 
         jours_utilisés = 0
         for jour in jours_seances:
