@@ -9,15 +9,34 @@ import locale
 locale.setlocale(locale.LC_TIME, "French_France.1252")
 
 # === PARAMÈTRES UTILISATEUR ===
-fichier_gpx = "tiger-balm-ultra-01-2025-tiger-balm-ultra-01-45-km.gpx"
-nom_parcours = "Tiger Balm Ultra 2025 - 45km"
+
+# Liste des fichiers GPX disponibles avec leurs noms
+fichiers_gpx = {
+    "1": {"fichier": "tiger-balm-ultra-01-2025-tiger-balm-ultra-01-45-km.gpx", "nom": "Tiger Balm Ultra 2025 - 45km", "date_course": "2025-07-19"},
+    "2": {"fichier": "beaujolais-villages-trail-2025-ultra-bvt.gpx", "nom": "UBVT 2025 - 84 km", "date_course": "2025-09-27"}
+}
+
+# Demander à l'utilisateur de choisir un fichier GPX
+print("Veuillez choisir un fichier GPX :")
+for key, value in fichiers_gpx.items():
+    print(f"{key}: {value['nom']} ({value['fichier']})")
+
+choix = input("Entrez le numéro du fichier (1 ou 2) : ").strip()
+while choix not in fichiers_gpx:
+    choix = input("Choix invalide. Entrez 1 ou 2 : ").strip()
+
+# Récupérer le fichier et le nom du parcours en fonction du choix
+fichier_gpx = fichiers_gpx[choix]["fichier"]
+nom_parcours = fichiers_gpx[choix]["nom"]
+date_course = fichiers_gpx[choix]["date_course"]
+
 distance_etape_km = 5
 vitesse_plat = 10  # km/h
 fatigue_coeff = 1.05
 nb_semaines = 8
 seances_par_semaine = 4
 objectif = "Finir avec plaisir"
-date_course = "2025-07-19"
+
 
 # === FONCTIONS UTILITAIRES ===
 
@@ -96,13 +115,13 @@ def calcul_etapes(points, distance_etape_km):
                 "D- (m)": int(d_moins),
                 "Temps (min)": int(temps_h * 60),
                 "Temps (horaire)": f"{int(temps_h)}h{int((temps_h*60)%60):02d}",
-                "Vitesse moyenne (km/h)": round(vitesse_moyenne, 2),
+"Vitesse moyenne (km/h)": round(vitesse_moyenne, 2),
                 "Cumul distance (km)": round(d_tot, 2),
                 "Cumul temps (horaire)": f"{int(temps_total)}h{int((temps_total*60)%60):02d}"
             })
             dist, d_plus, d_moins = 0, 0, 0
 
-    # Ajouter une dernière étape pour la distance restante
+   # Ajouter une dernière étape pour la distance restante
     if dist > 0:
         effort = dist + (d_plus / 100) * 0.8
         vitesse = vitesse_plat * (1 / (1 + d_plus / 500))
@@ -119,7 +138,7 @@ def calcul_etapes(points, distance_etape_km):
             "D- (m)": int(d_moins),
             "Temps (min)": int(temps_h * 60),
             "Temps (horaire)": f"{int(temps_h)}h{int((temps_h*60)%60):02d}",
-            "Vitesse moyenne (km/h)": round(vitesse_moyenne, 2),
+"Vitesse moyenne (km/h)": round(vitesse_moyenne, 2),
             "Cumul distance (km)": round(d_tot, 2),
             "Cumul temps (horaire)": f"{int(temps_total)}h{int((temps_total*60)%60):02d}"
         })
