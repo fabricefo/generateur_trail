@@ -1,3 +1,4 @@
+import os
 import gpxpy
 import pandas as pd
 import unicodedata
@@ -10,22 +11,42 @@ locale.setlocale(locale.LC_TIME, "French_France.1252")
 
 # === PARAMÈTRES UTILISATEUR ===
 
-# Liste des fichiers GPX disponibles avec leurs noms
-fichiers_gpx = {
-    "1": {"fichier": "tiger-balm-ultra-01-2025-tiger-balm-ultra-01-45-km.gpx", "nom": "Tiger Balm Ultra 2025 - 45km", "date_course": "2025-07-19"},
-    "2": {"fichier": "beaujolais-villages-trail-2025-ultra-bvt.gpx", "nom": "UBVT 2025 - 84 km", "date_course": "2025-09-27"}
-}
+# Répertoire contenant les fichiers GPX
+repertoire_gpx = "gpx"
+
+# Lister les fichiers GPX dans le répertoire et extraire les informations
+fichiers_gpx = {}
+for idx, fichier in enumerate((f for f in os.listdir(repertoire_gpx) if f.lower().endswith(".gpx")), start=1):
+    if fichier.endswith(".gpx"):
+        chemin_fichier = os.path.join(repertoire_gpx, fichier)
+
+        # Extraire la date de la course à partir du nom du fichier (YYYYmmdd)
+        try:
+            date_course = datetime.strptime(fichier[:8], "%Y%m%d").strftime("%Y-%m-%d")
+        except ValueError:
+            date_course = "Date inconnue"
+        
+        # Lire le fichier GPX pour extraire le nom du parcours depuis la balise <metadata><name>
+        with open(chemin_fichier, 'r') as f:
+            gpx = gpxpy.parse(f)
+            metadata = gpx
+            if metadata:
+                nom = metadata.name
+            else:
+                nom = "Nom inconnu"
+            
+            fichiers_gpx[str(idx)] = {"fichier": chemin_fichier, "nom": nom, "date_course": date_course}
 
 # Demander à l'utilisateur de choisir un fichier GPX
 print("Veuillez choisir un fichier GPX :")
 for key, value in fichiers_gpx.items():
-    print(f"{key}: {value['nom']} ({value['fichier']})")
+    print(f"{key}: {value['nom']} ({value['fichier']}) - Date : {value['date_course']}")
 
-choix = input("Entrez le numéro du fichier (1 ou 2) : ").strip()
+choix = input("Entrez le numéro du fichier : ").strip()
 while choix not in fichiers_gpx:
-    choix = input("Choix invalide. Entrez 1 ou 2 : ").strip()
+    choix = input("Choix invalide. Entrez un numéro valide : ").strip()
 
-# Récupérer le fichier et le nom du parcours en fonction du choix
+# Récupérer le fichier et les informations associées
 fichier_gpx = fichiers_gpx[choix]["fichier"]
 nom_parcours = fichiers_gpx[choix]["nom"]
 date_course = fichiers_gpx[choix]["date_course"]
